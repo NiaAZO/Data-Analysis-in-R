@@ -1,0 +1,279 @@
+---
+title: "Tarea Estadistica"
+author: "Estefania Garcia"
+date: "Mayo 2021"
+output:
+  html_document:
+    df_print: paged
+    toc_depth: 3
+    number_sections: true 
+    theme: yeti
+    highlight: tango
+    code_folding: hide
+    fig_width: 9
+    fig_height: 7
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error= FALSE, warning = FALSE, message=FALSE)
+```
+
+# - Objetivo
+El objetivo de la siguiente práctica es, dado un conjunto de datos, resolver las siguientes cuestiones:
+
+**Ejercicio 1**
+Se pide:
+
+a) Obtener con R las diferentes medidas de centralización y dispersión, asimetría y curtosis estudiadas. Así mismo, obtener el diagrama de caja y bigotes. Se debe hacer por separado para la submuestra de los que han padecido accidente cardiovascular y para la de los que no lo han padecido. Comentar los resultados obtenidos.
+
+b) Determinar si cada una de las dos submuestras sigue una distribución normal utilizando el test apropiado.
+
+**Ejercicio 2.** 
+Con los mismos datos del ejercicio anterior, obtener un intervalo de confianza para la diferencia entre las medias del IMC en el grupo de los que han padecido accidente y los que no. Utilizar el test t para contrastar la hipótesis de que ambas medias son iguales. Explicar qué condiciones se deben cumplir para poder aplicar ese contraste. Determinar si se cumplen. Admitiremos de forma natural la independencia entre ambas muestras, así que esa condición no hace falta comprobarla.
+
+
+# - Importación de la data
+
+Se cargan las librerías y se importa el conjunto de datos. 
+
+```{r cargo, message=FALSE, warning=FALSE, layout="l-body"}
+#-----------------------------------------
+# Library loading
+rm(list = ls())
+
+suppressPackageStartupMessages({
+ library(readxl)
+ library(modeest)
+})
+```
+Procedo a cargar los datos y a dividir en dos muestras: los que han sufrido un accidente y lo que no lo han sufrido.
+
+```{r datosdentro, message=FALSE, warning=FALSE, layout="l-body"}
+#-----------------------------------------
+# Data Loading
+Data<- read_excel('C:/Users/User/Documents/Estefania/Master/08. Estadística/DataTarea.xlsx')
+dat<- as.data.frame(Data)
+str(dat)
+#dat$Accidente<- as.factor(dat$Accidente)
+imc_acc<-dat$IMC[dat$Accidente=='1']
+imc_sano<-dat$IMC[dat$Accidente=='0']
+```
+A continuación, calcularemos una serie de estadísticos descriptivos sobre las variables. De esta forma tendremos la información resumida sobre la serie de datos que estamos analizando. 
+
+# - Medidas de tendencia central
+
+Las medidas de tendencia central son medidas estadísticas que pretenden resumir en un solo valor a un conjunto de valores. Representan un centro en torno al cual se encuentra ubicado el conjunto de los datos. Las medidas de tendencia central más utilizadas son: media, mediana y moda.
+
+## - Cálculo para la muestra que sufrió un accidente
+
+```{r centrales accidentes }
+mean(imc_acc) #media
+median(imc_acc) #mediana
+mfv(imc_acc)#moda
+```
+Resultados: se observa una distribución bimodal siendo las dos modas 27,2 y 29,2 respectivamente. El valor que divide la muestra a la mitad es 27.7 y la media de las observaciones es 28.09. Como en este caso la media es distinta a la mediana podemos pensar que la distribución no es simétrica sino asimétrica de cola derecha. 
+
+## - Cálculo para la muestra que no sufrió un accidente
+
+```{r centrales sanos}
+mean(imc_sano) #media
+median(imc_sano) #mediana
+mfv(imc_sano)#moda
+```
+Resultados: el valor que más se repite en la muestra es 26, mientras que el valor que deja el 50% de los datos a la izquierda es 26,8. El promedio de los datos es 27,35.Como en este caso la media es distinta a la mediana podemos pensar que la distribución no es simétrica sino asimétrica de cola derecha. 
+
+
+
+# - Medidas de variabilidad
+
+Las medidas de posición central como resumen pueden darnos una información de lo que, en promedio, cabría esperar. Pero no siempre son precisas.
+
+Para analizar mejor estas medidas, es recomendable combinar las medidas de tendencia central con medidas de dispersión. Las medidas de dispersión tampoco son infalibles, pero nos ofrecen información sobre la variabilidad de una determinada variable.
+
+## - Cálculo para la muestra que sufrió un accidente
+
+```{r variabilidad acc}
+var(imc_acc) # Varianza
+sd(imc_acc) #Desviación estándar
+sd(imc_acc)/mean(imc_acc) #Coeficiente de variación 
+range(imc_acc) #Rango
+```
+Resultados: la varianza es razonablemente pequeña por lo que la media es representativa, hay poca dispersión. 
+
+## - Cálculo para la muestra que no sufrió un accidente
+
+```{r variabilidad sano}
+var(imc_sano) # Varianza
+sd(imc_sano) #Desviación estándar
+sd(imc_sano)/mean(imc_sano) #Coeficiente de variación 
+range(imc_sano) #Rango
+```
+Resultados: la varianza es razonablemente pequeña por lo que la media es representativa, hay poca dispersión. 
+
+# - Medidas de posición, asimetría y curtosis
+
+Las medidas de asimetría sirven para tener una idea acerca de la forma de una distribución de frecuencias con sólo un número.  Estas medidas permiten saber las características de su asimetría y homogeneidad sin necesidad de representarlos gráficamente.
+
+En presencia de valores extremos, la forma de la distribución parece más puntiaguda; por esto la curtosis se conoce como una medida del apuntalamiento de la distribución.
+
+## - Cálculo para la muestra que sufrió un accidente
+
+```{r tabla freq acc}
+# Construcción de los intervalos mediante la función cut():
+intervalosIMCa=cut(imc_acc,breaks=seq(25.2,33,length=nclass.Sturges(imc_acc)),include.lowest=TRUE)
+intervalosIMCa # Se muestran los intervalos de edad, uno correspondiente a cada edad observada
+table(intervalosIMCa)
+
+##------------------------------------------------------------------------------------------------
+#Otra forma:
+
+library(agricolae)
+tbFreqIMCa=table.freq(hist(imc_acc,plot=FALSE))
+tbFreqIMCa
+```
+```{r asimetria y kurtosis acc}
+library(e1071)
+
+skewness(imc_acc)
+kurtosis(imc_acc)
+
+```
+Resultados: como sospechábamos cuando calculamos las medidas de tendencia central, la distribución tiene un sesgo positivo (asimétrica a la derecha) y es platicúrtica, pareciera que los datos están muy dispersos. 
+
+## - Cálculo para la muestra que no sufrió un accidente
+
+
+```{r tabla freq sano}
+# Construcción de los intervalos mediante la función cut():
+intervalosIMCs=cut(imc_sano,breaks=seq(25.4,31.6,length=nclass.Sturges(imc_sano)),include.lowest=TRUE)
+intervalosIMCs # Se muestran los intervalos de edad, uno correspondiente a cada edad observada
+table(intervalosIMCa)
+
+##------------------------------------------------------------------------------------------------
+#Otra forma:
+
+library(agricolae)
+tbFreqIMCs=table.freq(hist(imc_sano,plot=FALSE))
+tbFreqIMCs
+```
+
+```{r asimetria y kurtosis sano}
+library(e1071)
+skewness(imc_sano)
+kurtosis(imc_sano)
+```
+Resultados: como sospechábamos cuando calculamos las medidas de tendencia central, la distribución tiene un sesgo positivo (asimétrica a la derecha) y es mesocúrtica. 
+
+
+
+## - Análisis gráfico, histograma y boxplot
+
+```{r plots}
+par(mfrow=c(2,2)) #Para mostrar varios gráficos al tiempo
+hist(imc_acc, col = "deepskyblue", main = "Histograma de IMC de Personas con Accidente", ylab = "Frecuencia")
+hist(imc_sano, col = "deepskyblue", main = "Histograma de IMC de Personas Sanas", ylab = "Frecuencia")
+boxplot(imc_acc, col = "deepskyblue",  main = "Boxplot de IMC de Personas con Accidente", horizontal = TRUE)
+points(mean(imc_acc),pch=8)
+boxplot(imc_sano, col = "deepskyblue", main = "Boxplot de IMC de Personas Sanas", horizontal= TRUE)
+points(mean(imc_sano),pch=8)
+```
+En la siguiente salida vemos los valores numéricos de los cuartiles representados por nuestros gráficos boxplot. 
+
+
+```{r estadísticos resumen}
+summary(imc_acc)
+summary(imc_sano)
+```
+Resultados: el análisis de los gráficos de histograma concuerda con lo planteado anteriormente. Se observa claramente la distribución bimodal para el grupo que sufrió un accidente y la distribución asimétrica de cola derecha para las personas sanas. 
+
+Cuando los datos son asimétricos, la mayoría de los datos se ubican en la parte superior o inferior de la gráfica. La asimetría indica que los datos pueden no estar distribuidos normalmente.Estas gráficas de caja ilustran los datos asimétricos.Tenemos un outlier en el grupo de personas sanas con un IMC más elevado que el resto. 
+
+En ambos casos la parte izquierda de la caja es menor que la de la derecha; ello quiere decir que las personas con IMC comprendidas entre el 25% y el 50% de la población está menos dispersa que entre el 50% y el 75%.
+El bigote de la izquierda (Xmím, Q 1 ) es más corto que el de la derecha; por ello el 25% de las personas con menor IMC  están más concentrados que el 25% de las personas con IMC mayor.
+
+# - Estudiando la normalidad
+
+En estadística hay una gran cantidad de modelos, pruebas y procedimientos que tienen como supuesto la normalidad, por lo tanto, se hace necesario contar con herramientas que nos guíen para responder si se cumple o no el supuesto de normalidad.
+
+En el contraste de normalidad la hipótesis nula es la hipótesis de normalidad, esto es, no hay diferencias entre nuestra distribución y una distribución normal con esa media y esa desviación típica. Para contrastar la normalidad usamos el test de Shapiro-Wilk, con la función shapiro.test( ).
+
+```{r normalidad}
+shapiro.test(imc_acc)
+shapiro.test(imc_sano)
+```
+De la salida anterior se observa que ambos valores-P fueron menores al nivel de significancia 5%, por lo tanto, se puede concluir que ambas muestras provienen de poblaciones con una distribución distinta a la normal.
+
+# - Intervalo de confianza
+
+El concepto de intervalo de confianza viene a reducir la incertidumbre en inferencia estadística pues nos proporcionará un rango de valores entre los que se encuentra el parámetro desconocido con una confianza alta, controlada por el investigador. En este caso se asume que las muestras son independientes y que la varianza es desconocida pero igual. 
+
+```{r IC}
+t.test(x=imc_acc, y=imc_sano,
+       paired=FALSE,
+       conf.level = 0.95)$conf.int
+```
+A partir del intervalo de confianza anterior se puede concluir, con un nivel de confianza del 95 %, que el IMC promedio de las personas que han sufrido un accidente es superior al IMC promedio de aquellos que no lo han sufrido, ya que el intervalo de confianza NO incluye el cero y es positivo. En este caso el intervalo resultante de la diferencia de medias es (0,12-1,36).
+
+# - Contraste de Hipótesis
+El contraste de hipotesis es una regla de decisión para elegir entre dos hipótesis: la nula y la alternativa. 
+
+
+## - Contraste de diferencia de medias
+Vamos a realizar el contraste de hipótesis siguiente: 
+$$
+\left\{
+\begin{array}{ll}
+H_{0}: &  \mu_1=\mu_2\\
+H_{0}: & \mu_1\neq\mu_2
+\end{array}
+\right.
+$$
+Para realizar este procedimiento un supuesto importante además de la independencia de muestras es el suspuesto sobre la varianza cuando es desconocida. Hay dos casos cuando la varianza es desconocida en las dos muestras pero igual y cuando las varianzas son distintas. 
+
+Como aún no hemos contrastado la igualdad de varianzas entre las dos muestras calcularemos los dos contrastes en ambos supuestos. El código es
+
+
+```{r hipotesis equal}
+sol.ttest.vareq=t.test(imc_acc,imc_sano,alternative="two.side",var.equal=TRUE,conf.level=0.95)
+sol.ttest.vareq
+sol.ttest.vareq$statistic
+sol.ttest.vareq$p.value
+sol.ttest.vareq$conf.int
+```
+```{r hipotesis nep}
+sol.ttest.varneq=t.test(imc_acc,imc_sano,alternative="two.side",var.equal=FALSE,conf.level=0.95)
+sol.ttest.varneq
+sol.ttest.varneq$statistic
+sol.ttest.varneq$p.value
+sol.ttest.varneq$conf.int
+```
+De la salida anterior se observa que ambos valores-P fueron menores al nivel de significancia 5%, por lo tanto, se puede concluir que ambas casos la diferencia de medias es distinta a cero (se rechaza la hipotesis nula), es decir, las medias no son iguales. 
+
+
+## - Contraste de igualdad de varianzas
+
+Del ejercicio anterior nos queda pendiente comprobar la igualdad de varianzas. En el contraste de homogeneidad de varianzas la hipótesis nula es la varianza es constante (no varía) en los diferentes grupos. Para contrastarla podemos utilizar el test F de Snedecor con var.test( ), que se aplica cuando solo hay dos grupos.
+
+```{r Fisher}
+sol.var.test=var.test(imc_acc, imc_sano,ratio=1,alternative="two.sided",conf.level=0.95)
+sol.var.test
+sol.var.test$statistic
+sol.var.test$p.value
+sol.var.test$conf.int
+```
+El p-valor asociado al contraste es 0.3476. Como este valor es superior al nivel de significación (que para este ejemplo es 0.05), no podemos rechazar la hipótesis nula que hemos planteado. Es decir, se puede considerar que la varianza del grupo de personas que sufrió un accidente y la varianza del grupo de personas que no lo sufrió son iguales.
+
+Cabe destacar que en este ejercicio comprobamos que las distribuciones no son normales para ninguna de las muestras. Esto nos indica que deberíamos plantearnos utilizar test estadísticos distintos para los contrastes de hipótesis ya que tanto el test-t como el var-test tienen como supuesto la normalidad. Se deja planteada la idea para posteriores investigaciones. 
+
+# - Referencias bibliográficas
+
+https://rpubs.com/daco92/579609
+https://rstudio-pubs-static.s3.amazonaws.com/65042_a1784120e81a430f9de400ed9b899b0b.html#formulas-basicas-en-r-markdown-para-contrastes-de-hipotesis.
+https://wpd.ugr.es/~bioestad/guia-de-r/practica-6/
+https://fhernanb.github.io/Manual-de-R/normalidad.html#consideraciones-iniciales
+https://rpubs.com/Jo_/contrastes_hipotesis_ttest
+
